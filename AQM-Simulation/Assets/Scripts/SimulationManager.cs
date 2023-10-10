@@ -42,7 +42,7 @@ public class SimulationManager : MonoBehaviour {
         double s = estimate();
         text.color = s <= 2 ? new Color32(0, 255, 0, 255) : new Color32(255, 0, 0, 255);
         if (double.IsNaN(s)) s = 0.0;
-        text.text = string.Format("<mspace=0.6em>|S| = {0:0.0000} ≤ 2</mspace>", s);
+        text.text = string.Format("<mspace=0.55em>|S| = {0:0.0000} ≤ 2</mspace>", s);
     }
 
     public void updateA(float value)
