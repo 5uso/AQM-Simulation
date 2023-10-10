@@ -17,7 +17,7 @@ def confusion(a, b):
 
 def filter(alpha, beta):
     # Probability amplitude is determined by the cosine of the angle difference
-    return rng.random() < math.cos(math.radians(alpha - beta))**2
+    return rng.random() < math.cos(math.radians(abs(alpha - beta)))**2
 
 def bell_classical(alpha, beta, samples):
     # Uniform photon source
@@ -38,8 +38,8 @@ def bell_classical(alpha, beta, samples):
 def passes_qm(alpha, beta, photon):
     # Randomly determine which photon of the pair to simulate first,
     # to avoid bias
-    #order = rng.randint(0, 1) == 1
-    #if order: alpha, beta = beta, alpha
+    order = rng.randint(0, 1) == 1
+    if order: alpha, beta = beta, alpha
 
     # Does photon 1 pass through the polarizer?
     passes_a = filter(alpha, photon)
@@ -48,7 +48,7 @@ def passes_qm(alpha, beta, photon):
     # function. Its angle is either equivalent to that of the first
     # polarizer, or orthogonal to it.
     passes_b = filter(beta, alpha + 90 * (not passes_a))
-    return (passes_a, passes_b)
+    
     return (passes_a, passes_b) if order else (passes_b, passes_a)
 
 def bell_qm(alpha, beta, samples):
@@ -58,6 +58,35 @@ def bell_qm(alpha, beta, samples):
 
     # Do the photons pass filter 1? do they pass filter 2?
     passes_a, passes_b = zip(*(passes_qm(alpha, beta, p) for p in photons))
+
+    # Count coincidences
+    pp, pn, np, nn = confusion(passes_a, passes_b)
+
+    # Estimate for test setup
+    e = (pp - pn - np + nn) / (pp + pn + np + nn)
+
+    return e
+
+def passes_hidden(alpha, beta, photon):
+    # Does photon 1 pass through the polarizer?
+    passes_a = filter(alpha, photon)
+
+    # Probability of photon 2 coinciding with 1 is linear with respect to the angle difference
+    passes_b = passes_a
+    diff = abs((alpha % 180) - (beta % 180))
+    if diff > 90: diff = 90 - diff
+    if rng.random() < diff / 90:
+        passes_b = not passes_b
+    
+    return (passes_a, passes_b)
+
+def bell_hidden(alpha, beta, samples):
+    # Assume a photon source generating pairs of entangled photons with
+    # a uniform polarization distribution
+    photons = [rng.random() * 360 for _ in range(samples)]
+
+    # Do the photons pass filter 1? do they pass filter 2?
+    passes_a, passes_b = zip(*(passes_hidden(alpha, beta, p) for p in photons))
 
     # Count coincidences
     pp, pn, np, nn = confusion(passes_a, passes_b)
@@ -119,10 +148,10 @@ def find_best():
     print(a0, a0+diff, b0, b0+diff)
 
 def single_experiment():
-    result = bell_test(1000000, bell_qm)
+    result = bell_test(1000000, bell_hidden)
     expected = 2 * math.sqrt(2)
     print(f'Result: {result}  Expected: {expected}  Err: {abs(result - expected)}')
-    print(f'This test could{" not" if result > 2 else ""} be described by local hidden variable theories.')
+    print(f'This test could{" not" if result > 2.1 else ""} be described by local hidden variable theories.')
 
 def plot_angles():
     rcParams.update({'font.size': 30})
@@ -157,30 +186,39 @@ def plot_angles():
     plt.show()
 
 def plot_converge():
-    rcParams.update({'font.size': 30})
+    rcParams.update({'font.size': 20})
 
-    fig, (ax1, ax2) = plt.subplots(2, 1)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
     x = [int(a) for a in logspace(2, 6, 300)]
     resultsa = [bell_test(a, bell_qm) for a in tqdm(x)]
     resultsb = [bell_test(a, bell_classical) for a in tqdm(x)]
+    resultsc = [bell_test(a, bell_hidden) for a in tqdm(x)]
 
-    ax1.axhline(y=2*2**0.5, c='tab:green', ls=':', lw='5')
     ax1.plot(x, resultsa, c='tab:blue')
+    ax1.axhline(y=2*2**0.5, c='tab:pink', ls=':', lw='5')
     ax1.legend(['Quantum results','Quantum theoretical limit'])
     ax1.set_xscale(scl.LogScale('x', base = 10))
 
-    ax2.axhline(y=2**0.5, c='tab:purple', ls=':', lw='5')
     ax2.plot(x, resultsb, c='tab:red')
+    ax2.axhline(y=2**0.5, c='tab:purple', ls=':', lw='5')
     ax2.legend(['Classic results', 'Classic theoretical limit'])
     ax2.set_xscale(scl.LogScale('x', base = 10))
 
+    ax3.plot(x, resultsc, c='tab:orange')
+    ax3.axhline(y=2, c='tab:green', ls=':', lw='5')
+    ax3.legend(['Hidden variable results', 'Hidden variable theoretical limit'])
+    ax3.set_xscale(scl.LogScale('x', base = 10))
+
     ax1.grid()
     ax2.grid()
+    ax3.grid()
 
-    fig.text(0.04, 0.5, 'Final experiment estimate', va='center', rotation='vertical')
+    fig.text(0.005, 0.5, 'Final experiment estimate', va='center', rotation='vertical')
     plt.xlabel('Sample size (photon pairs)')
 
     plt.show()
 
+#find_best() # Binary search for bell test angles
+#single_experiment() # Run a single experiment
 #plot_angles() # Graph varying angles
-#plot_converge() # Graph increasing sample size, qm vs classical
+plot_converge() # Graph increasing sample size, qm vs classical
