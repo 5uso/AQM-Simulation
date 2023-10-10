@@ -1,7 +1,11 @@
+import matplotlib.pyplot as plt
+import matplotlib.scale as scl
 import random as rng
 import math
-import matplotlib.pyplot as plt
-from numpy import arange
+
+from numpy import arange, logspace
+from matplotlib import rcParams
+from tqdm import tqdm
 
 def confusion(a, b):
     pp = sum(    p and     q for p, q in zip(a, b))
@@ -34,8 +38,8 @@ def bell_classical(alpha, beta, samples):
 def passes_qm(alpha, beta, photon):
     # Randomly determine which photon of the pair to simulate first,
     # to avoid bias
-    order = rng.randint(0, 1) == 1
-    if order: alpha, beta = beta, alpha
+    #order = rng.randint(0, 1) == 1
+    #if order: alpha, beta = beta, alpha
 
     # Does photon 1 pass through the polarizer?
     passes_a = filter(alpha, photon)
@@ -43,8 +47,8 @@ def passes_qm(alpha, beta, photon):
     # Photon's b measurement is affected by the collapse of the wave
     # function. Its angle is either equivalent to that of the first
     # polarizer, or orthogonal to it.
-    passes_b = filter( beta, alpha + 90 * (not passes_a))
-
+    passes_b = filter(beta, alpha + 90 * (not passes_a))
+    return (passes_a, passes_b)
     return (passes_a, passes_b) if order else (passes_b, passes_a)
 
 def bell_qm(alpha, beta, samples):
@@ -91,8 +95,8 @@ def find_best():
         mid = (lo + hi) / 2
         sample_lo = (lo + mid) / 2
         sample_hi = (hi + mid) / 2
-        result_lo = bell_test(100000, bell_qm, a0=a0, a1=a0+sample_lo, b0=b0, b1=b0+sample_lo)
-        result_hi = bell_test(100000, bell_qm, a0=a0, a1=a0+sample_hi, b0=b0, b1=b0+sample_hi)
+        result_lo = bell_test(1000000, bell_qm, a0=a0, a1=a0+sample_lo, b0=b0, b1=b0+sample_lo)
+        result_hi = bell_test(1000000, bell_qm, a0=a0, a1=a0+sample_hi, b0=b0, b1=b0+sample_hi)
         if result_lo > result_hi: hi = mid
         else: lo = mid
     
@@ -105,8 +109,8 @@ def find_best():
         mid = (lo + hi) / 2
         sample_lo = (lo + mid) / 2
         sample_hi = (hi + mid) / 2
-        result_lo = bell_test(100000, bell_qm, a0=a0, a1=a0+diff, b0=sample_lo, b1=sample_lo+diff)
-        result_hi = bell_test(100000, bell_qm, a0=a0, a1=a0+diff, b0=sample_hi, b1=sample_hi+diff)
+        result_lo = bell_test(1000000, bell_qm, a0=a0, a1=a0+diff, b0=sample_lo, b1=sample_lo+diff)
+        result_hi = bell_test(1000000, bell_qm, a0=a0, a1=a0+diff, b0=sample_hi, b1=sample_hi+diff)
         if result_lo > result_hi: hi = mid
         else: lo = mid
     
@@ -114,14 +118,69 @@ def find_best():
 
     print(a0, a0+diff, b0, b0+diff)
 
-find_best()
+def single_experiment():
+    result = bell_test(1000000, bell_qm)
+    expected = 2 * math.sqrt(2)
+    print(f'Result: {result}  Expected: {expected}  Err: {abs(result - expected)}')
+    print(f'This test could{" not" if result > 2 else ""} be described by local hidden variable theories.')
 
-result = bell_test(1000000, bell_qm)
-expected = 2 * math.sqrt(2)
-print(f'Result: {result}  Expected: {expected}  Err: {abs(result - expected)}')
-print(f'This test could{" not" if result > 2 else ""} be described by local hidden variable theories.')
+def plot_angles():
+    rcParams.update({'font.size': 30})
 
-x = list(arange(0, 90.1, 0.5))
-results = [bell_test(10000, bell_qm, a0=0, a1=a, b0=22.5, b1=22.5+a) for a in x]
-plt.plot(x, results)
-plt.show()
+    x = list(arange(0, 360.1, 1))
+    resultsa = [bell_test(1000, bell_qm, a0=0, a1=45, b0=a, b1=a+45) for a in x]
+    resultsb = [bell_test(1000, bell_qm, a0=0, a1=a, b0=22.5, b1=22.5+a) for a in x]
+
+    cont = arange(0, math.tau, 0.1)
+    plt.plot(cont, [math.sin(a * 2 + math.pi / 4) * 2 * 2**0.5 for a in cont], c='tab:blue', ls='--')
+    plt.plot(cont, [math.sin(a * 2) * 2**0.5 + 2**0.5 for a in cont], c='tab:red' , ls='--')
+
+    plt.axhline(y= 2*2**0.5, c='tab:purple', ls=':', lw='5')
+    plt.axhline(y= 2, c='red', ls='-', lw='5')
+    plt.axhline(y=-2*2**0.5, c='tab:purple', ls=':', lw='5')
+    plt.axhline(y=-2, c='red', ls='-', lw='5')
+
+    rads = [a / 180 * math.pi for a in x]
+    plt.plot(rads, resultsa, '+', c='tab:blue')
+    plt.plot(rads, resultsb, 'x', c='tab:red' )
+
+    plt.xticks([0, math.pi / 2, math.pi, 3/2*math.pi, math.tau, math.radians(22.5), math.radians(45)], [0, "$\pi/2$", "$\pi$", "$3\pi/2$", "$2\pi$", "$\pi/8$", "$\pi/4$"])
+    plt.axvline(x=math.radians(22.5), c='tab:blue', ls=':')
+    plt.axvline(x=math.radians(45.0), c='tab:red' , ls=':')
+
+    plt.xlabel('Angle (radians)')
+    plt.ylabel('Final experiment estimate')
+
+    plt.legend(['Varying difference between beam splitters', 'Varying difference of beam splitter settings', 'Quantum theoretical limit', 'Local hidden variable limit'])
+
+    plt.grid()
+    plt.show()
+
+def plot_converge():
+    rcParams.update({'font.size': 30})
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    x = [int(a) for a in logspace(2, 6, 300)]
+    resultsa = [bell_test(a, bell_qm) for a in tqdm(x)]
+    resultsb = [bell_test(a, bell_classical) for a in tqdm(x)]
+
+    ax1.axhline(y=2*2**0.5, c='tab:green', ls=':', lw='5')
+    ax1.plot(x, resultsa, c='tab:blue')
+    ax1.legend(['Quantum results','Quantum theoretical limit'])
+    ax1.set_xscale(scl.LogScale('x', base = 10))
+
+    ax2.axhline(y=2**0.5, c='tab:purple', ls=':', lw='5')
+    ax2.plot(x, resultsb, c='tab:red')
+    ax2.legend(['Classic results', 'Classic theoretical limit'])
+    ax2.set_xscale(scl.LogScale('x', base = 10))
+
+    ax1.grid()
+    ax2.grid()
+
+    fig.text(0.04, 0.5, 'Final experiment estimate', va='center', rotation='vertical')
+    plt.xlabel('Sample size (photon pairs)')
+
+    plt.show()
+
+#plot_angles() # Graph varying angles
+#plot_converge() # Graph increasing sample size, qm vs classical
