@@ -1,11 +1,14 @@
 import matplotlib.pyplot as plt
 import matplotlib.scale as scl
 import random as rng
+import pandas as pd
 import math
 
 from numpy import arange, logspace
 from matplotlib import rcParams
 from tqdm import tqdm
+
+xls = pd.ExcelWriter('bell.xlsx')
 
 def confusion(a, b):
     pp = sum(    p and     q for p, q in zip(a, b))
@@ -157,8 +160,8 @@ def plot_angles():
     rcParams.update({'font.size': 30})
 
     x = list(arange(0, 360.1, 1))
-    resultsa = [bell_test(1000, bell_qm, a0=0, a1=45, b0=a, b1=a+45) for a in x]
-    resultsb = [bell_test(1000, bell_qm, a0=0, a1=a, b0=22.5, b1=22.5+a) for a in x]
+    resultsa = [bell_test(1000, bell_qm, a0=0, a1=45, b0=a, b1=a+45) for a in tqdm(x)]
+    resultsb = [bell_test(1000, bell_qm, a0=0, a1=a, b0=22.5, b1=22.5+a) for a in tqdm(x)]
 
     cont = arange(0, math.tau, 0.1)
     plt.plot(cont, [math.sin(a * 2 + math.pi / 4) * 2 * 2**0.5 for a in cont], c='tab:blue', ls='--')
@@ -172,6 +175,9 @@ def plot_angles():
     rads = [a / 180 * math.pi for a in x]
     plt.plot(rads, resultsa, '+', c='tab:blue')
     plt.plot(rads, resultsb, 'x', c='tab:red' )
+
+    frame = pd.DataFrame({'x': x, 'rads': rads, 'baseB': resultsa, 'diff': resultsb})
+    frame.to_excel(xls, sheet_name='angles', index=False)
 
     plt.xticks([0, math.pi / 2, math.pi, 3/2*math.pi, math.tau, math.radians(22.5), math.radians(45)], [0, "$\pi/2$", "$\pi$", "$3\pi/2$", "$2\pi$", "$\pi/8$", "$\pi/4$"])
     plt.axvline(x=math.radians(22.5), c='tab:blue', ls=':')
@@ -193,6 +199,9 @@ def plot_converge():
     resultsa = [bell_test(a, bell_qm) for a in tqdm(x)]
     resultsb = [bell_test(a, bell_classical) for a in tqdm(x)]
     resultsc = [bell_test(a, bell_hidden) for a in tqdm(x)]
+
+    frame = pd.DataFrame({'x': x, 'qm': resultsa, 'classical': resultsb, 'hidden': resultsc})
+    frame.to_excel(xls, sheet_name='converge', index=False)
 
     ax1.plot(x, resultsa, c='tab:blue')
     ax1.axhline(y=2*2**0.5, c='tab:pink', ls=':', lw='5')
@@ -220,5 +229,7 @@ def plot_converge():
 
 #find_best() # Binary search for bell test angles
 #single_experiment() # Run a single experiment
-#plot_angles() # Graph varying angles
+plot_angles() # Graph varying angles
 plot_converge() # Graph increasing sample size, qm vs classical
+
+xls.close()
