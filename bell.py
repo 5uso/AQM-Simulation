@@ -77,7 +77,7 @@ def passes_hidden(alpha, beta, photon):
     # Probability of photon 2 coinciding with 1 is linear with respect to the angle difference
     passes_b = passes_a
     diff = abs((alpha % 180) - (beta % 180))
-    if diff > 90: diff = 90 - diff
+    if diff > 90: diff = 180 - diff
     if rng.random() < diff / 90:
         passes_b = not passes_b
     
@@ -151,48 +151,52 @@ def find_best():
     print(a0, a0+diff, b0, b0+diff)
 
 def single_experiment():
-    result = bell_test(1000000, bell_hidden)
+    result = bell_test(10000000, bell_hidden)
     expected = 2 * math.sqrt(2)
     print(f'Result: {result}  Expected: {expected}  Err: {abs(result - expected)}')
     print(f'This test could{" not" if result > 2.1 else ""} be described by local hidden variable theories.')
 
 def plot_angles():
-    rcParams.update({'font.size': 30})
+    rcParams.update({'font.size': 38})
 
     x = list(arange(0, 360.1, 1))
     resultsa = [bell_test(1000, bell_qm, a0=0, a1=45, b0=a, b1=a+45) for a in tqdm(x)]
     resultsb = [bell_test(1000, bell_qm, a0=0, a1=a, b0=22.5, b1=22.5+a) for a in tqdm(x)]
 
-    cont = arange(0, math.tau, 0.1)
-    plt.plot(cont, [math.sin(a * 2 + math.pi / 4) * 2 * 2**0.5 for a in cont], c='tab:blue', ls='--')
-    plt.plot(cont, [math.sin(a * 2) * 2**0.5 + 2**0.5 for a in cont], c='tab:red' , ls='--')
+    #f = pd.read_excel('bbell.xlsx', sheet_name='angles')
+    #resultsa = list(f['baseB'])
+    #resultsb = list(f['diff'])
 
-    plt.axhline(y= 2*2**0.5, c='tab:purple', ls=':', lw='5')
+    cont = arange(0, math.tau, 0.1)
+    plt.plot(cont, [math.sin(a * 2 + math.pi / 4) * 2 * 2**0.5 for a in cont], c='#01c1fd', ls='--')
+    plt.plot(cont, [math.sin(a * 2) * 2**0.5 + 2**0.5 for a in cont], c='#7030a0' , ls='--')
+
+    plt.axhline(y= 2*2**0.5, c='tab:green', ls=':', lw='5')
     plt.axhline(y= 2, c='red', ls='-', lw='5')
-    plt.axhline(y=-2*2**0.5, c='tab:purple', ls=':', lw='5')
+    plt.axhline(y=-2*2**0.5, c='tab:green', ls=':', lw='5')
     plt.axhline(y=-2, c='red', ls='-', lw='5')
 
     rads = [a / 180 * math.pi for a in x]
-    plt.plot(rads, resultsa, '+', c='tab:blue')
-    plt.plot(rads, resultsb, 'x', c='tab:red' )
+    plt.plot(rads, resultsa, '+', c='#01c1fd')
+    plt.plot(rads, resultsb, 'x', c='#7030a0' )
 
-    frame = pd.DataFrame({'x': x, 'rads': rads, 'baseB': resultsa, 'diff': resultsb})
-    frame.to_excel(xls, sheet_name='angles', index=False)
+    #frame = pd.DataFrame({'x': x, 'rads': rads, 'baseB': resultsa, 'diff': resultsb})
+    #frame.to_excel(xls, sheet_name='angles', index=False)
 
     plt.xticks([0, math.pi / 2, math.pi, 3/2*math.pi, math.tau, math.radians(22.5), math.radians(45)], [0, "$\pi/2$", "$\pi$", "$3\pi/2$", "$2\pi$", "$\pi/8$", "$\pi/4$"])
-    plt.axvline(x=math.radians(22.5), c='tab:blue', ls=':')
-    plt.axvline(x=math.radians(45.0), c='tab:red' , ls=':')
+    plt.axvline(x=math.radians(22.5), c='#01c1fd', ls=':')
+    plt.axvline(x=math.radians(45.0), c='#7030a0' , ls=':')
 
-    plt.xlabel('Angle (radians)')
-    plt.ylabel('Final experiment estimate')
+    plt.xlabel('θ (radians)')
+    plt.ylabel('S')
 
-    plt.legend(['Varying difference between beam splitters', 'Varying difference of beam splitter settings', 'Quantum theoretical limit', 'Local hidden variable limit'])
+    plt.legend(['Varying beam splitter diff.', 'Varying setting diff.', 'QM limit', 'Inequality limit'])
 
-    plt.grid()
+    #plt.grid()
     plt.show()
 
 def plot_converge():
-    rcParams.update({'font.size': 20})
+    rcParams.update({'font.size': 35})
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
     x = [int(a) for a in logspace(2, 6, 300)]
@@ -200,36 +204,41 @@ def plot_converge():
     resultsb = [bell_test(a, bell_classical) for a in tqdm(x)]
     resultsc = [bell_test(a, bell_hidden) for a in tqdm(x)]
 
-    frame = pd.DataFrame({'x': x, 'qm': resultsa, 'classical': resultsb, 'hidden': resultsc})
-    frame.to_excel(xls, sheet_name='converge', index=False)
+    #f = pd.read_excel('bbell.xlsx', sheet_name='converge')
+    #resultsa = list(f['qm'])
+    #resultsb = list(f['classical'])
+    #resultsc = list(f['hidden'])
+
+    #frame = pd.DataFrame({'x': x, 'qm': resultsa, 'classical': resultsb, 'hidden': resultsc})
+    #frame.to_excel(xls, sheet_name='converge', index=False)
 
     ax1.plot(x, resultsa, c='tab:blue')
     ax1.axhline(y=2*2**0.5, c='tab:pink', ls=':', lw='5')
-    ax1.legend(['Quantum results','Quantum theoretical limit'])
+    ax1.legend(['Quantum results','Quantum theoretical limit'], loc='upper right', fontsize="25")
     ax1.set_xscale(scl.LogScale('x', base = 10))
 
     ax2.plot(x, resultsb, c='tab:red')
     ax2.axhline(y=2**0.5, c='tab:purple', ls=':', lw='5')
-    ax2.legend(['Classic results', 'Classic theoretical limit'])
+    ax2.legend(['Classic results', 'Classic theoretical limit'], loc='lower right', fontsize="25")
     ax2.set_xscale(scl.LogScale('x', base = 10))
 
     ax3.plot(x, resultsc, c='tab:orange')
     ax3.axhline(y=2, c='tab:green', ls=':', lw='5')
-    ax3.legend(['Hidden variable results', 'Hidden variable theoretical limit'])
+    ax3.legend(['Hidden variable results', 'Hidden variable theoretical limit'], loc='upper right', fontsize="25")
     ax3.set_xscale(scl.LogScale('x', base = 10))
 
-    ax1.grid()
-    ax2.grid()
-    ax3.grid()
+    #ax1.grid()
+    #ax2.grid()
+    #ax3.grid()
 
-    fig.text(0.005, 0.5, 'Final experiment estimate', va='center', rotation='vertical')
+    fig.text(0.005, 0.5, 'S', va='center', rotation='vertical')
     plt.xlabel('Sample size (photon pairs)')
 
     plt.show()
 
 #find_best() # Binary search for bell test angles
-#single_experiment() # Run a single experiment
-plot_angles() # Graph varying angles
-plot_converge() # Graph increasing sample size, qm vs classical
+single_experiment() # Run a single experiment
+#plot_angles() # Graph varying angles
+#plot_converge() # Graph increasing sample size, qm vs classical
 
 xls.close()

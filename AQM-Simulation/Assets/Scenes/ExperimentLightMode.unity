@@ -3559,7 +3559,7 @@ MonoBehaviour:
   priority: 0
   blendDistance: 0
   weight: 1
-  sharedProfile: {fileID: 11400000, guid: c65ac49e06211b3419d551c478f19e59, type: 2}
+  sharedProfile: {fileID: 11400000, guid: a5e71e1fb17190c4d9ce404eacb17812, type: 2}
 --- !u!4 &490328877
 Transform:
   m_ObjectHideFlags: 0
@@ -3727,7 +3727,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!81 &519420029
 AudioListener:
   m_ObjectHideFlags: 0
@@ -7010,7 +7010,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1077382462
 MonoBehaviour:
   m_ObjectHideFlags: 0

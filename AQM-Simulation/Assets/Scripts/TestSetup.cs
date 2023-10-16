@@ -15,7 +15,7 @@ public class TestSetup : MonoBehaviour {
     [SerializeField] private GameObject[] beams;
     private Material[] beamMats;
 
-    Func<double, double, double, (bool, bool)> filter = Filters.qm_filter;
+    public Func<double, double, double, (bool, bool)> filter = Filters.qm_filter;
 
     private long total = 0;
     private long PP = 0;
@@ -86,5 +86,18 @@ public class TestSetup : MonoBehaviour {
 
         splitterText[0].text = string.Format("{0:0.0}º", alpha);
         splitterText[1].text = string.Format("{0:0.0}º", beta);
+    }
+
+    public void reset()
+    {
+        total = 0;
+        PP = 0;
+        PN = 0;
+        NP = 0;
+        NN = 0;
+        LP = 0;
+        LN = 0;
+        RP = 0;
+        RN = 0;
     }
 }
